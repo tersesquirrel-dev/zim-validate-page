@@ -49,15 +49,3 @@ class ValidatePagePageViewExtension(PageViewExtension):
 		source_file = str(self.pageview.page.source_file)
 
 		self.plugin.validate_page(source_file)
-
-		#pageview = self.pageview
-		#textview = pageview.textview
-		#buffer = textview.get_buffer()
-		#start, end = buffer.get_bounds()
-		#text = start.get_text(end) # only gets text without formatting
-
-		#text = self.plugin.strip_errors(text)
-		#text = self.plugin.validate_page(text)
-#
-		#with buffer.user_action:
-		#	buffer.set_text(text)
