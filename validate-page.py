@@ -3,12 +3,16 @@
 
 
 import logging
+from pathlib import Path
+from subprocess import run
+import sys
 
 from zim.plugins import PluginClass
 from zim.actions import action
 from zim.errors import Error
 
 from zim.gui.pageview import PageViewExtension
+from zim.notebook import NotebookExtension
 
 
 logger = logging.getLogger('zim.plugins.validate-page')
@@ -25,28 +29,15 @@ This plugin allows creation of python scripts to validate pages.
 		'help': 'Plugins:Validate Page',
 	}
 
-	ERROR_START = '\t!!! ERROR: '
-	ERROR_END = ' !!!'
-
-	def strip_errors(self, text):
-		'''Strip error messages from text'''
-		while True:
-			start_index = text.find(self.ERROR_START)
-			if start_index == -1:
-				break
-			end_index = text.find(self.ERROR_END, start_index)
-			if end_index == -1:
-				break
-			text = text[:start_index] + text[end_index + len(self.ERROR_END):]
-		
-		return text
-
-	def validate_page(self, text):
+	def validate_page(self, source_file):
 		'''Validate a page of text'''
-		text = text.replace('red', 'red\t!!! ERROR: should be number !!!')
+		
+		if source_file:
+			validation_script = Path(source_file).with_name('validation.py')
 
-		return text
-
+			if validation_script.exists():
+				run([sys.executable, str(validation_script), source_file], check=True)
+					
 class ValidatePagePageViewExtension(PageViewExtension):
 
 	@action(_('_Validate Page')) # T: menu item
@@ -54,17 +45,19 @@ class ValidatePagePageViewExtension(PageViewExtension):
 		'''Action called by the menu item or key binding,
 		when on the page to validate.
 		'''
-		pageview = self.pageview
-		textview = pageview.textview
-		buffer = textview.get_buffer()
-		start, end = buffer.get_bounds()
-		text = start.get_text(end)
 
-		# TODO: Preserve formatting for text
-		# TODO: Stip old errors before adding new ones
-		
-		text = self.plugin.strip_errors(text)
-		text = self.plugin.validate_page(text)
+		source_file = str(self.pageview.page.source_file)
 
-		with buffer.user_action:
-			buffer.set_text(text)
+		self.plugin.validate_page(source_file)
+
+		#pageview = self.pageview
+		#textview = pageview.textview
+		#buffer = textview.get_buffer()
+		#start, end = buffer.get_bounds()
+		#text = start.get_text(end) # only gets text without formatting
+
+		#text = self.plugin.strip_errors(text)
+		#text = self.plugin.validate_page(text)
+#
+		#with buffer.user_action:
+		#	buffer.set_text(text)
