@@ -19,6 +19,19 @@ logger = logging.getLogger('zim.plugins.validate-page')
 logger.setLevel(logging.DEBUG)
 
 
+def find_validation_script(source_path):
+	'''Search for validation.py in parent directories recursively'''
+	current = source_path.parent
+
+	while current != current.parent:
+		validation_script = current / 'validation.py'
+		if validation_script.exists():
+			return validation_script
+		current = current.parent
+
+	return None
+
+
 class ValidatePagePlugin(PluginClass):
 
 	plugin_info = {
@@ -46,28 +59,28 @@ class ValidatePagePageViewExtension(PageViewExtension):
 		source_file = str(page.source_file)
 
 		logger.debug(f'Validating page: {source_file}')
-		
+
 		if source_file:
 			source_path = Path(source_file)
-			
-			validation_script = source_path.parent / 'validation.py'
 
-			if validation_script.exists():
+			validation_script = find_validation_script(source_path)
+
+			if validation_script:
 				try:
 					self.pageview.save_page()
-					result = run([sys.executable, str(validation_script), source_file], 
+					result = run([sys.executable, str(validation_script), source_file],
 								  capture_output=True, text=True, check=True,
 								  cwd=Path(source_file).parent)
 					self.pageview.reload_page()
-					
+
 					# Log execution details
 					logger.debug(f'Return code: {result.returncode}')
-					
+
 					if result.stdout:
 						logger.info(f'Script stdout: {result.stdout.strip()}')
 					else:
 						logger.debug('No stdout from script')
-						
+
 					if result.stderr:
 						logger.error(f'Script stderr: {result.stderr.strip()}')
 					else:
