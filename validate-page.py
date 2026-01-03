@@ -4,7 +4,7 @@
 
 import logging
 from pathlib import Path
-from subprocess import run
+from subprocess import run, CalledProcessError
 import sys
 
 from zim.plugins import PluginClass
@@ -16,6 +16,7 @@ from zim.notebook import NotebookExtension
 
 
 logger = logging.getLogger('zim.plugins.validate-page')
+logger.setLevel(logging.DEBUG)
 
 
 class ValidatePagePlugin(PluginClass):
@@ -29,16 +30,11 @@ This plugin allows creation of python scripts to validate pages.
 		'help': 'Plugins:Validate Page',
 	}
 
-	def validate_page(self, source_file):
-		'''Validate a page of text'''
-		
-		if source_file:
-			validation_script = Path(source_file).with_name('validation.py')
-
-			if validation_script.exists():
-				run([sys.executable, str(validation_script), source_file], check=True)
-					
 class ValidatePagePageViewExtension(PageViewExtension):
+
+	#def __init__(self, plugin, window):
+	#	PageViewExtension.__init__(self, plugin, window)
+	#	self.ui = window
 
 	@action(_('_Validate Page')) # T: menu item
 	def validate_page(self):
@@ -46,6 +42,45 @@ class ValidatePagePageViewExtension(PageViewExtension):
 		when on the page to validate.
 		'''
 
-		source_file = str(self.pageview.page.source_file)
+		page = self.pageview.page
+		source_file = str(page.source_file)
 
-		self.plugin.validate_page(source_file)
+		logger.debug(f'Validating page: {source_file}')
+		
+		if source_file:
+			source_path = Path(source_file)
+			
+			validation_script = source_path.parent / 'validation.py'
+
+			if validation_script.exists():
+				try:
+					self.pageview.save_page()
+					result = run([sys.executable, str(validation_script), source_file], 
+								  capture_output=True, text=True, check=True,
+								  cwd=Path(source_file).parent)
+					self.pageview.reload_page()
+					
+					# Log execution details
+					logger.debug(f'Return code: {result.returncode}')
+					
+					if result.stdout:
+						logger.info(f'Script stdout: {result.stdout.strip()}')
+					else:
+						logger.debug('No stdout from script')
+						
+					if result.stderr:
+						logger.error(f'Script stderr: {result.stderr.strip()}')
+					else:
+						logger.debug('No stderr from script')
+
+				except CalledProcessError as e:
+					logger.error("Validation script failed (%s)", validation_script)
+					logger.error("Return code: %s", e.returncode)
+
+					if e.stdout:
+						logger.error("Stdout: %s", e.stdout.strip())
+					if e.stderr:
+						logger.error("Stderr: %s", e.stderr.strip())
+
+				except Exception as e:
+					logger.error(f'Error executing validation script {validation_script}: {e}')
