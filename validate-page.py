@@ -29,7 +29,7 @@ def find_validation_script(source_path):
 			return validation_script
 
 		# stop if we're at the root of the wiki
-		if current.glob('*.zim'):
+		if any(current.glob('*.zim')):
 			return None
 
 		current = current.parent
