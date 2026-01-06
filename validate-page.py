@@ -27,6 +27,11 @@ def find_validation_script(source_path):
 		validation_script = current / 'validation.py'
 		if validation_script.exists():
 			return validation_script
+
+		# stop if we're at the root of the wiki
+		if current.glob('*.zim'):
+			return None
+
 		current = current.parent
 
 	return None
