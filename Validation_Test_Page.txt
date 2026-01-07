@@ -6,5 +6,5 @@ Validate Test Page
 
 This should validate that count is a number...
 
-Count: red  //**^{!!! INVALID COUNT !!!}**//
+Count: red **__!!! INVALID COUNT !!!__**
 Count: 1

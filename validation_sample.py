@@ -29,18 +29,16 @@ print(f'{datetime.now()}: Validating page file: {page_file}')
 
 lines = open(page_file).readlines()
 
-value_count = False
-error_prefix = ' //**^{!!! '
-error_suffix = ' !!!}**//'
+ERROR_PREFIX = ' **__!!! '
+ERROR_SUFFIX = ' !!!__**'
 
 for i, line in enumerate(lines):
     # strip existing errors
-    if error_prefix in line:
+    if ERROR_PREFIX in line:
         if line.endswith('\n'):
-            lines[i] = line.split(error_prefix)[0] + '\n'
+            lines[i] = line.split(ERROR_PREFIX)[0] + '\n'
         else:
-            lines[i] = line.split(error_prefix)[0]
-
+            lines[i] = line.split(ERROR_PREFIX)[0]
 for i, line in enumerate(lines):
     if line.startswith('Count:'):
         value_str = line.split(':', 1)[1]
@@ -48,7 +46,7 @@ for i, line in enumerate(lines):
             value_int = int(value_str)
         except ValueError:
             print(f"Warning: Invalid count value '{value_str}'")
-            error_message = f'{error_prefix}INVALID COUNT{error_suffix}'
+            error_message = f'{ERROR_PREFIX}INVALID COUNT{ERROR_SUFFIX}'
 
             if line.endswith('\n'):
                 lines[i] = line.replace('\n', f'{error_message}\n')
