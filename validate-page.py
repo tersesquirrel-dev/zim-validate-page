@@ -54,7 +54,7 @@ class ValidatePagePageViewExtension(PageViewExtension):
 	#	PageViewExtension.__init__(self, plugin, window)
 	#	self.ui = window
 
-	@action(_('_Validate Page'), accelerator='<Ctrl><Shift>V', menuhints='go') # T: menu item
+	@action(_('_Validate Page')) # T: menu item
 	def validate_page(self):
 		'''Action called by the menu item or key binding,
 		when on the page to validate.
@@ -75,7 +75,7 @@ class ValidatePagePageViewExtension(PageViewExtension):
 					self.pageview.save_page()
 					result = run([sys.executable, str(validation_script), source_file],
 								  capture_output=True, text=True, check=True,
-								  cwd=Path(source_file).parent)
+								  cwd=Path(validation_script).parent)
 					self.pageview.reload_page()
 
 					# Log execution details
