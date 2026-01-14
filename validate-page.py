@@ -4,6 +4,7 @@
 
 import logging
 from pathlib import Path
+from shutil import which
 from subprocess import run, CalledProcessError
 import sys
 
@@ -26,10 +27,12 @@ def find_validation_script(source_path):
 	while current != current.parent:
 		validation_script = current / 'validation.py'
 		if validation_script.exists():
+			logger.debug(f'Found validation script at {validation_script}')
 			return validation_script
 
 		# stop if we're at the root of the wiki
 		if any(current.glob('*.zim')):
+			logger.debug(f'No validation script found up to wiki root at {current}')
 			return None
 
 		current = current.parent
@@ -72,8 +75,26 @@ class ValidatePagePageViewExtension(PageViewExtension):
 
 			if validation_script:
 				try:
+					def find_python():
+						return (
+							which("py") or      # Windows launcher
+							which("python3") or
+							which("python")
+						)
+
+					python = find_python()
+					if not python:
+						logger.error("No Python interpreter found in system PATH.")
+						raise Error("No Python interpreter found in system PATH.")
+
 					self.pageview.save_page()
-					result = run([sys.executable, str(validation_script), source_file],
+
+					logger.debug(f'Executing validation script: {validation_script}')
+					logger.debug(f'With source file: {source_file}')
+					logger.debug(f'Using Python executable: {python}')
+					logger.debug(f'In working directory: {Path(validation_script).parent}')
+
+					result = run([python, str(validation_script), source_file],
 								  capture_output=True, text=True, check=True,
 								  cwd=Path(validation_script).parent)
 					self.pageview.reload_page()
